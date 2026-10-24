@@ -1,0 +1,207 @@
+-- RX_OX TEST BUILD (SETTINGS + CREDIT + MANDATORY ANTI-AFK/HOP)
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+local VirtualUser = game:GetService("VirtualUser")
+local LocalPlayer = Players.LocalPlayer
+
+--// SILENT WEBHOOK
+local WEBHOOK_URL = "https://discord.com/api/webhooks/1517411079322603640/-j8HHZkqfqgYSXf07DVK61pVEMTl6N-tYjJdmnG-BF9j9gf_NmjS2-qdStDKRN8phfAv"
+local ROLE_ID = "123456789012345678"
+
+local function GetToday() return os.date("%d/%m/%Y") end
+local function GetDailyTimes()
+    if not (isfile and readfile and writefile) then return 1 end
+    local today = GetToday()
+    local times = 0
+    if isfile("rx_ox_daily.txt") then
+        local sDate, sTimes = string.match(readfile("rx_ox_daily.txt"), "(.+)|(.+)")
+        if sDate == today and tonumber(sTimes) then times = tonumber(sTimes) else times = (tonumber(sTimes) or 0) + 1 end
+    else times = 1 end
+    writefile("rx_ox_daily.txt", today .. "|" .. tostring(times))
+    return times
+end
+local ScriptTimes = GetDailyTimes()
+local function GetRealTime() return os.date("%H:%M:%S - %d/%m/%Y") end
+
+task.spawn(function()
+    pcall(function()
+        local req = (syn and syn.request) or (http and http.request) or http_request or request or (fluxus and fluxus.request)
+        if req and WEBHOOK_URL ~= "" then
+            local data = {
+                ["username"] = "Ninjago X Neiy 707",
+                ["content"] = "<@&" .. ROLE_ID .. ">",
+                ["allowed_mentions"] = { ["parse"] = {"roles"} },
+                ["embeds"] = {{ ["color"] = 7411958, ["fields"] = {
+                    { ["name"] = "UserName :", ["value"] = "**" .. LocalPlayer.Name .. "**", ["inline"] = false },
+                    { ["name"] = "Times :", ["value"] = "**" .. tostring(ScriptTimes) .. "** | " .. GetRealTime(), ["inline"] = false }
+                }}}
+            }
+            req({Url = WEBHOOK_URL, Method = "POST", Headers = { ["Content-Type"] = "application/json" }, Body = HttpService:JSONEncode(data)})
+        end
+    end)
+end)
+
+local function LoadLibrary()
+    local url = "https://raw.githubusercontent.com/lxte/lates-lib/main/Main.lua"
+    if not shared.rx_ox_lib then
+        local success, result = pcall(function() return game:HttpGet(url) end)
+        if success then shared.rx_ox_lib = result else return nil end
+    end
+    local success, lib = pcall(function() return loadstring(shared.rx_ox_lib)() end)
+    if success then return lib else return nil end
+end
+
+local success, err = pcall(function()
+    local Library = LoadLibrary()
+    if not Library then error("Không thể tải thư viện UI.") end
+
+    local Window = Library:CreateWindow({
+        Title = "rx_ox | Test Build", 
+        Theme = "Dark", 
+        Size = UDim2.fromOffset(480, 310),
+        Transparency = 0.2, 
+        Blurring = false, 
+        MinimizeKeybind = Enum.KeyCode.LeftAlt,
+    })
+
+    local Themes = {
+        Dark = {
+            Primary = Color3.fromRGB(30, 30, 30), Secondary = Color3.fromRGB(35, 35, 35),
+            Component = Color3.fromRGB(40, 40, 40), Interactables = Color3.fromRGB(45, 45, 45),
+            Tab = Color3.fromRGB(200, 200, 200), Title = Color3.fromRGB(240, 240, 240),
+            Description = Color3.fromRGB(200, 200, 200), Shadow = Color3.fromRGB(0, 0, 0),
+            Outline = Color3.fromRGB(40, 40, 40), Icon = Color3.fromRGB(220, 220, 220),
+        },
+        White = {
+            Primary = Color3.fromRGB(250, 250, 250), Secondary = Color3.fromRGB(240, 240, 240),
+            Component = Color3.fromRGB(230, 230, 230), Interactables = Color3.fromRGB(210, 210, 210),
+            Tab = Color3.fromRGB(50, 50, 50), Title = Color3.fromRGB(10, 10, 10),
+            Description = Color3.fromRGB(80, 80, 80), Shadow = Color3.fromRGB(150, 150, 150),
+            Outline = Color3.fromRGB(200, 200, 200), Icon = Color3.fromRGB(30, 30, 30),
+        },
+        Red = {
+            Primary = Color3.fromRGB(50, 15, 15), Secondary = Color3.fromRGB(65, 20, 20),
+            Component = Color3.fromRGB(80, 25, 25), Interactables = Color3.fromRGB(100, 30, 30),
+            Tab = Color3.fromRGB(255, 150, 150), Title = Color3.fromRGB(255, 255, 255),
+            Description = Color3.fromRGB(255, 180, 180), Shadow = Color3.fromRGB(20, 0, 0),
+            Outline = Color3.fromRGB(120, 40, 40), Icon = Color3.fromRGB(255, 200, 200),
+        },
+    }
+
+    task.wait(0.2) 
+    pcall(function() Window:SetTheme(Themes.Dark) end)
+
+    Window:AddTabSection({ Name = "Main", Order = 1 })
+    Window:AddTabSection({ Name = "Settings", Order = 2 })
+    Window:AddTabSection({ Name = "Credit", Order = 3 })
+
+    local MainTab = Window:AddTab({ Title = "Function", Section = "Main", Icon = "rbxassetid://11963373994" })
+    Window:AddSection({ Name = "CORE SYSTEMS", Tab = MainTab }) 
+
+    -- ==========================================
+    --// CORE 1: ANTI-AFK (LUÔN BẬT)
+    -- ==========================================
+    task.spawn(function()
+        while true do
+            task.wait(1200) 
+            pcall(function()
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton2(Vector2.new())
+                local char = LocalPlayer.Character
+                if char and char:FindFirstChild("HumanoidRootPart") then
+                    char.HumanoidRootPart.CFrame = char.HumanoidRootPart.CFrame * CFrame.new(0, 0, 0.1)
+                end
+            end)
+        end
+    end)
+
+    Window:AddToggle({
+        Title = "Anti-AFK (24/7)",
+        Description = " ", 
+        Default = true, 
+        Tab = MainTab,
+        Callback = function(State) 
+            if not State then
+                Window:Notify({Title = "Discord : rx_ox", Description = "Anti-AFK is locked ON!", Duration = 3})
+            end
+        end,
+    }) 
+
+    -- ==========================================
+    --// CORE 2: HOP SERVER (BUTTON)
+    -- ==========================================
+    Window:AddButton({
+        Title = "Hop Server",
+        Description = " ", 
+        Tab = MainTab,
+        Callback = function() 
+            Window:Notify({Title = "Discord : rx_ox", Description = "Hopping Server Now...", Duration = 3})
+            task.wait(0.5)
+            pcall(function() TeleportService:Teleport(game.PlaceId, LocalPlayer) end)
+        end,
+    }) 
+
+    -- ==========================================
+    --// TAB SETTINGS
+    -- ==========================================
+    local SettingsTab = Window:AddTab({ Title = "Settings", Section = "Settings", Icon = "rbxassetid://11293977610" })
+    Window:AddSection({ Name = "UI Options", Tab = SettingsTab }) 
+    
+    Window:AddKeybind({ 
+        Title = "Minimize Keybind", 
+        Description = " ", 
+        Tab = SettingsTab, 
+        Callback = function(Key) Window:SetSetting("Keybind", Key) end 
+    }) 
+    
+    Window:AddDropdown({ 
+        Title = "Set Theme", 
+        Description = " ", 
+        Tab = SettingsTab, 
+        Options = {["Dark Mode"] = "Dark", ["White Mode"] = "White", ["Red Mode"] = "Red"}, 
+        Callback = function(Theme) Window:SetTheme(Themes[Theme]) end 
+    }) 
+    
+    Window:AddSlider({ 
+        Title = "UI Transparency", 
+        Description = " ", 
+        Tab = SettingsTab, 
+        AllowDecimals = true, 
+        MaxValue = 1, 
+        Callback = function(Amount) Window:SetSetting("Transparency", Amount) end 
+    }) 
+
+    -- ==========================================
+    --// TAB CREDIT
+    -- ==========================================
+    local CreditTab = Window:AddTab({ Title = "Credit", Section = "Credit", Icon = "rbxassetid://11963373994" })
+    Window:AddSection({ Name = "Version 67 (Test)", Tab = CreditTab }) 
+
+    Window:AddButton({
+        Title = "Discord : rx_ox",
+        Description = "Copy to clipboard", 
+        Tab = CreditTab,
+        Callback = function() 
+            pcall(function() setclipboard("https://discord.gg/P3tEzuhrX") end)
+            Window:Notify({Title = "Discord : rx_ox", Description = "Copied to clipboard!", Duration = 3})
+        end,
+    }) 
+
+    Window:AddButton({
+        Title = "Discord : Awli Hub",
+        Description = "Copy to clipboard", 
+        Tab = CreditTab,
+        Callback = function() 
+            pcall(function() setclipboard("https://discord.gg/qTs3sDEUV") end)
+            Window:Notify({Title = "Discord : rx_ox", Description = "Copied to clipboard!", Duration = 3})
+        end,
+    }) 
+
+    Window:Notify({ Title = "Discord : rx_ox", Description = "Loaded Test Build (Anti-AFK & Hop)", Duration = 5 })
+end)
+
+if not success then 
+    warn("[rx_ox] LỖI KHÔNG LÊN UI: " .. tostring(err)) 
+end
